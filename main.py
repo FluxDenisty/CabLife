@@ -1,6 +1,6 @@
 import pygame
 from pygame import display
-# from pygame import draw
+from pygame import draw
 from pygame import Color
 import sys
 
@@ -27,8 +27,8 @@ class TextSystem(object):
 
     def getText(self):
         text = [
-            "WWWWWWWWWWWWWWWWWWWW",
-            "WWWWWWWWWWWWWWWWWWWW"]
+            "WWWWWWWWWWWWWWWWWWWWWW",
+            "WWWWWWWWWWWWWWWWWWWWWW"]
         length = (len(text[0]) + len(text[1]))
         progress = int((self.timer / self.animTime) * length)
         if (progress < len(text[0])):
@@ -40,11 +40,14 @@ class TextSystem(object):
         return text
 
     def drawText(self, window):
+        rect = (0, 118, 160, 144)
+        draw.rect(window, Palette.NORM, rect)
+
         text = self.getText()
         label = self.font.render(text[0], False, Palette.LIGHT)
-        window.blit(label, (10, 120))
+        window.blit(label, (3, 120))
         label = self.font.render(text[1], False, Palette.LIGHT)
-        window.blit(label, (10, 130))
+        window.blit(label, (3, 130))
 
 global window
 
