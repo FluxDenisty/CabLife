@@ -3,6 +3,10 @@ from pygame import display
 from pygame import draw
 from pygame import Color
 import sys
+import Box2D
+from Box2D.b2 import world
+
+global PPM = 20.0
 
 
 class Palette(object):
@@ -54,6 +58,8 @@ global window
 pygame.init()
 clock = pygame.time.Clock()
 
+world = world(gravity=(0, 0), doSleep=True)
+
 window = display.set_mode(
     (160, 144))
 display.set_caption('CabLife')
@@ -78,5 +84,6 @@ while True:
                 pygame.quit()
                 sys.exit()
 
+    world.Step(diff, 10, 10)
     display.flip()
     clock.tick(59.7)
