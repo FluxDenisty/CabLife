@@ -6,7 +6,7 @@ import sys
 from Box2D.b2 import world
 from car import TDCar
 
-PPM = 20.0
+PPM = 1.0
 
 TDC_LEFT = int('0001', 2)
 TDC_RIGHT = int('0010', 2)
@@ -52,7 +52,7 @@ class TextSystem(object):
         return text
 
     def drawText(self, window):
-        rect = (0, 118, 160, 144)
+        rect = (0, 118, 160, 144 - 118)
         draw.rect(window, Palette.NORM, rect)
 
         text = self.getText()
@@ -109,8 +109,7 @@ world = world(gravity=(0, 0), doSleep=True)
 car = TDCar(world)
 controlState = 0
 
-window = display.set_mode(
-    (160, 144))
+window = display.set_mode((160, 144))
 display.set_caption('CabLife')
 display.init()
 
@@ -153,10 +152,35 @@ while True:
     Step(car, controlState)
     world.Step(diff, 10, 10)
 
+    '''
     rect = [car.m_body.position.x, -car.m_body.position.y, 20, 20]
     rect[0] += 40
     rect[1] += 40
     draw.rect(window, Palette.LIGHT, rect)
+    '''
+
+    for body in (car.GetAllBodies()):  # or: world.bodies
+        # The body gives us the position and angle of its shapes
+        for fixture in body.fixtures:
+            # The fixture holds information like density and friction,
+            # and also the shape.
+            shape = fixture.shape
+
+            # Naively assume that this is a polygon shape. (not good normally!)
+            # We take the body's transform and multiply it with each
+            # vertex, and then convert from meters to pixels with the scale
+            # factor.
+            vertices = [(body.transform * v) * PPM for v in shape.vertices]
+
+            # But wait! It's upside-down! Pygame and Box2D orient their
+            # axes in different ways. Box2D is just like how you learned
+            # in high school, with positive x and y directions going
+            # right and up. Pygame, on the other hand, increases in the
+            # right and downward directions. This means we must flip
+            # the y components.
+            vertices = [(v[0] + 50, 144 - v[1] - 50) for v in vertices]
+
+            pygame.draw.polygon(window, Palette.NORM, vertices)
 
     display.flip()
     clock.tick(59.7)

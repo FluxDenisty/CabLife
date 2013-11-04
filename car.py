@@ -9,7 +9,7 @@ http://www.iforce2d.net/src/iforce2d_TopdownCar.h
 '''
 
 
-PPM = 20.0
+PPM = 1.0
 DEGTORAD = 0.0174532925199432957
 RADTODEG = 57.295779513082320876
 
@@ -63,11 +63,12 @@ class TDTire(object):
 
         bodyDef = b2BodyDef()
         bodyDef.type = b2_dynamicBody
+        bodyDef.restitution = 0.1
         self.m_body = world.CreateBody(bodyDef)
 
         polygonShape = b2PolygonShape()
         polygonShape.SetAsBox(0.5, 1.25)
-        fixture = self.m_body.CreateFixture(shape=polygonShape, density=1)
+        fixture = self.m_body.CreateFixture(shape=polygonShape, density=5)
         fixture.userData = CarTireFUD()
 
         self.m_body.userData = self
@@ -120,11 +121,11 @@ class TDTire(object):
         # lateral linear velocity
         impulse = self.m_body.mass * -self.getLateralVelocity()
         if (impulse.length > self.m_maxLateralImpulse):
-            impulse *= self.m_maxLateralImpulse / impulse.Length()
+            impulse *= self.m_maxLateralImpulse / impulse.length
         self.m_body.ApplyLinearImpulse(
             self.m_currentTraction * impulse,
             self.m_body.worldCenter,
-            True)
+            False)
 
         # angular velocity
         self.m_body.ApplyAngularImpulse(
@@ -132,7 +133,7 @@ class TDTire(object):
             * 0.1
             * self.m_body.inertia
             * -self.m_body.angularVelocity,
-            True)
+            False)
 
         # forward linear velocity
         currentForwardNormal = self.getForwardVelocity()
@@ -143,7 +144,7 @@ class TDTire(object):
             dragForceMagnitude *
             currentForwardNormal,
             self.m_body.worldCenter,
-            True)
+            False)
 
     def updateDrive(self, controlState):
         # find desired speed
@@ -179,9 +180,9 @@ class TDTire(object):
         desiredTorque = 0
         switch = (controlState & (TDC_LEFT | TDC_RIGHT))
         if (switch == TDC_LEFT):
-            desiredTorque = 15
+            desiredTorque = 5
         elif (switch == TDC_RIGHT):
-            desiredTorque = -15
+            desiredTorque = -5
         self.m_body.ApplyTorque(desiredTorque)
 
 
@@ -193,24 +194,25 @@ class TDCar(object):
         # create car body
         bodyDef = b2BodyDef()
         bodyDef.type = b2_dynamicBody
+        bodyDef.restitution = 0.1
         self.m_body = world.CreateBody(bodyDef)
         self.m_body.angularDamping = 3
 
         vertices = []
         for i in xrange(8):
             vertices.append(b2Vec2())
-        vertices[0].Set(1.5, 0)
-        vertices[1].Set(3, 2.5)
-        vertices[2].Set(2.8, 5.5)
-        vertices[3].Set(1, 10)
-        vertices[4].Set(-1, 10)
-        vertices[5].Set(-2.8, 5.5)
-        vertices[6].Set(-3, 2.5)
-        vertices[7].Set(-1.5, 0)
+        vertices[0].Set(3, 0)
+        vertices[1].Set(6, 5)
+        vertices[2].Set(5.6, 11)
+        vertices[3].Set(2, 20)
+        vertices[4].Set(-2, 20)
+        vertices[5].Set(-5.6, 11)
+        vertices[6].Set(-6, 5)
+        vertices[7].Set(-3, 0)
         polygonShape = b2PolygonShape(vertices=vertices)
         self.m_body.CreateFixture(
             shape=polygonShape,
-            density=0.1,
+            density=2.0,
         )
 
         # prepare common joint parameters
@@ -221,12 +223,12 @@ class TDCar(object):
         jointDef.upperAngle = 0
         jointDef.localAnchorB.SetZero()  # center of tire
 
-        maxForwardSpeed = 250
+        maxForwardSpeed = 150
         maxBackwardSpeed = -40
-        backTireMaxDriveForce = 300
-        frontTireMaxDriveForce = 500
-        backTireMaxLateralImpulse = 8.5
-        frontTireMaxLateralImpulse = 7.5
+        backTireMaxDriveForce = 50
+        frontTireMaxDriveForce = 100
+        backTireMaxLateralImpulse = 2.5
+        frontTireMaxLateralImpulse = 1.5
 
         # back left tire
         tire = TDTire(world)
@@ -236,7 +238,7 @@ class TDCar(object):
             backTireMaxDriveForce,
             backTireMaxLateralImpulse)
         jointDef.bodyB = tire.m_body
-        jointDef.localAnchorA.Set(-3, 0.75)
+        jointDef.localAnchorA.Set(-6, 1.5)
         world.CreateJoint(jointDef)
         self.m_tires.append(tire)
 
@@ -248,7 +250,7 @@ class TDCar(object):
             backTireMaxDriveForce,
             backTireMaxLateralImpulse)
         jointDef.bodyB = tire.m_body
-        jointDef.localAnchorA.Set(3, 0.75)
+        jointDef.localAnchorA.Set(6, 1.5)
         world.CreateJoint(jointDef)
         self.m_tires.append(tire)
 
@@ -260,7 +262,7 @@ class TDCar(object):
             frontTireMaxDriveForce,
             frontTireMaxLateralImpulse)
         jointDef.bodyB = tire.m_body
-        jointDef.localAnchorA.Set(-3, 8.5)
+        jointDef.localAnchorA.Set(-6, 17)
         self.flJoint = world.CreateJoint(jointDef)
         self.m_tires.append(tire)
 
@@ -272,13 +274,20 @@ class TDCar(object):
             frontTireMaxDriveForce,
             frontTireMaxLateralImpulse)
         jointDef.bodyB = tire.m_body
-        jointDef.localAnchorA.Set(3, 8.5)
+        jointDef.localAnchorA.Set(6, 17)
         self.frJoint = world.CreateJoint(jointDef)
         self.m_tires.append(tire)
 
     def __del__(self):
         for i in xrange(len(self.m_tires)):
             self.m_tires[i] = None
+
+    def GetAllBodies(self):
+        ret = []
+        ret.append(self.m_body)
+        for tire in self.m_tires:
+            ret.append(tire.m_body)
+        return ret
 
     def update(self, controlState):
         for i in xrange(len(self.m_tires)):
@@ -288,20 +297,21 @@ class TDCar(object):
 
         # control steering
         lockAngle = 35 * DEGTORAD
-        turnSpeedPerSec = 160 * DEGTORAD  # from lock to lock in 0.5 sec
+        turnSpeedPerSec = 60 * DEGTORAD  # from lock to lock in 0.5 sec
         turnPerTimeStep = turnSpeedPerSec / 60.0
         desiredAngle = 0
         switch = (controlState & (TDC_LEFT | TDC_RIGHT))
         if (switch == TDC_LEFT):
             desiredAngle = lockAngle
-        if (switch == TDC_RIGHT):
+        elif (switch == TDC_RIGHT):
             desiredAngle = -lockAngle
-        angleNow = self.flJoint.angle
+        angleNow = self.flJoint.angle * 0.95
         angleToTurn = desiredAngle - angleNow
         angleToTurn = numpy.clip(angleToTurn, -turnPerTimeStep, turnPerTimeStep)
         newAngle = angleNow + angleToTurn
         self.flJoint.SetLimits(newAngle, newAngle)
         self.frJoint.SetLimits(newAngle, newAngle)
+
 
 class MyDestructionListener(b2DestructionListener):
     def SayGoodbye(self, fixture):
