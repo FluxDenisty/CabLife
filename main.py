@@ -3,10 +3,18 @@ from pygame import display
 from pygame import draw
 from pygame import Color
 import sys
-import Box2D
 from Box2D.b2 import world
+from car import TDCar
 
-global PPM = 20.0
+PPM = 20.0
+
+TDC_LEFT = int('0001', 2)
+TDC_RIGHT = int('0010', 2)
+TDC_UP = int('0100', 2)
+TDC_DOWN = int('1000', 2)
+
+FUD_CAR_TIRE = 0
+FUD_GROUND_AREA = 1
 
 
 class Palette(object):
@@ -53,12 +61,53 @@ class TextSystem(object):
         label = self.font.render(text[1], False, Palette.LIGHT)
         window.blit(label, (3, 130))
 
+
+def handleContact(contact, began):
+    a = contact.GetFixtureA()
+    b = contact.GetFixtureB()
+    fudA = a.userData
+    fudB = b.userData
+
+    if (fudA is None or fudB is None):
+        return
+
+    if (fudA.getType() == FUD_CAR_TIRE or
+            fudB.getType() == FUD_GROUND_AREA):
+        tire_vs_groundArea(a, b, began)
+    elif (fudA.getType() == FUD_GROUND_AREA or
+            fudB.getType() == FUD_CAR_TIRE):
+        tire_vs_groundArea(b, a, began)
+
+
+def BeginContact(contact):
+    handleContact(contact, True)
+
+
+def EndContact(contact):
+    handleContact(contact, False)
+
+
+def tire_vs_groundArea(tireFixture, groundAreaFixture, began):
+    tire = tireFixture.body.userData
+    gaFud = groundAreaFixture.userData
+    if (began):
+        tire.addGroundArea(gaFud)
+    else:
+        tire.removeGroundArea(gaFud)
+
+
+def Step(m_car, m_controlState):
+    m_car.update(m_controlState)
+
 global window
 
 pygame.init()
 clock = pygame.time.Clock()
 
 world = world(gravity=(0, 0), doSleep=True)
+
+car = TDCar(world)
+controlState = 0
 
 window = display.set_mode(
     (160, 144))
@@ -83,7 +132,31 @@ while True:
             if event.key == pygame.K_q:
                 pygame.quit()
                 sys.exit()
+            elif event.key == pygame.K_a:
+                controlState |= TDC_LEFT
+            elif event.key == pygame.K_d:
+                controlState |= TDC_RIGHT
+            elif event.key == pygame.K_w:
+                controlState |= TDC_UP
+            elif event.key == pygame.K_s:
+                controlState |= TDC_DOWN
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_a:
+                controlState &= ~TDC_LEFT
+            elif event.key == pygame.K_d:
+                controlState &= ~TDC_RIGHT
+            elif event.key == pygame.K_w:
+                controlState &= ~TDC_UP
+            elif event.key == pygame.K_s:
+                controlState &= ~TDC_DOWN
 
+    Step(car, controlState)
     world.Step(diff, 10, 10)
+
+    rect = [car.m_body.position.x, -car.m_body.position.y, 20, 20]
+    rect[0] += 40
+    rect[1] += 40
+    draw.rect(window, Palette.LIGHT, rect)
+
     display.flip()
     clock.tick(59.7)
