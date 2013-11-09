@@ -4,6 +4,7 @@ class MapGridCell(object):
     # types
     TYPE_BUILDING = "BD"
     TYPE_ROAD = "RD"
+    TYPE_SIDEWALK = "SW"
 
     # positions
     POS_TOP = "T"
@@ -25,6 +26,7 @@ class MapGridCell(object):
         self.type = type
         self.pos = pos
         self.dir = dir
+        self.overlap = False
 
     def __repr__(self):
         return self.__str__()
@@ -62,8 +64,10 @@ class MapGrid(object):
             # handle buldings
             if obj.type == "building":
                 self._fillGridForBuilding(obj)
-            if obj.type == "road":
+            elif obj.type == "road":
                 self._fillGridForRoad(obj)
+            elif obj.type == "sidewalk":
+                self._fillGridForSidewalk(obj)
 
     def printGrid(self):
         for l in self.grid:
@@ -77,7 +81,18 @@ class MapGrid(object):
             self.grid[y][x] = cell
             return
 
-        # TODO: handle overlapping case
+        # Buildings should never overlap
+        if cell.type == MapGridCell.TYPE_BUILDING:
+            return
+        
+        # handle roads overlapping
+        if cell.dir == self.grid[y][x].dir:
+            self.grid[y][x].pos = MapGridCell.POS_CENTER
+            self.grid[y][x].overlap = True
+        else:
+            self.grid[y][x].dir = MapGridCell.DIR_NEUTRAL
+            self.grid[y][x].pos = MapGridCell.POS_CENTER
+            self.grid[y][x].overlap = True
 
 
     def _fillGridForRoad(self, obj):
@@ -94,10 +109,10 @@ class MapGrid(object):
                 cell.type = MapGridCell.TYPE_ROAD
 
                 if isVert:
-                    if (x - left) == 0:
+                    if x == left:
                         cell.pos = MapGridCell.POS_LEFT
                         cell.dir = MapGridCell.DIR_VERT
-                    elif (x - left) == right:
+                    elif x == right:
                         cell.pos = MapGridCell.POS_RIGHT
                         cell.dir = MapGridCell.DIR_VERT
                     elif (x - left) % MapGrid.R_LINE_SEP_NUM == 0:
@@ -106,10 +121,10 @@ class MapGrid(object):
                     else:
                         cell.pos = MapGridCell.POS_CENTER
                 else:
-                    if (y - top) == 0:
+                    if y == top:
                         cell.pos = MapGridCell.POS_TOP
                         cell.dir = MapGridCell.DIR_HOR
-                    elif (y - top) == bot:
+                    elif y == bot:
                         cell.pos = MapGridCell.POS_BOT
                         cell.dir = MapGridCell.DIR_HOR
                     elif (y - bot) % MapGrid.R_LINE_SEP_NUM == 0:
@@ -120,6 +135,39 @@ class MapGrid(object):
 
                 self._setGrid(cell, x, y)
 
+    def _fillGridForSidewalk(self, obj):
+        left = obj.pos.x
+        right = obj.pos.x + obj.dim.w - 1
+        top = obj.pos.y
+        bot = obj.pos.y + obj.dim.h - 1 
+
+        for x in range(left, right + 1):
+            for y in range(top, bot + 1):
+                cell = MapGridCell()
+                cell.type = MapGridCell.TYPE_SIDEWALK
+
+                if x == left:
+                    if y == top:
+                        cell.pos = MapGridCell.POS_TOPLEFT
+                    elif y == bot:
+                        cell.pos = MapGridCell.POS_BOTLEFT
+                    else:
+                        cell.pos = MapGridCell.POS_LEFT
+                elif x == right:
+                    if y == top:
+                        cell.pos = MapGridCell.POS_TOPRIGHT
+                    elif y == bot:
+                        cell.pos = MapGridCell.POS_BOTRIGHT
+                    else:
+                        cell.pos = MapGridCell.POS_RIGHT
+                elif y == top:
+                    cell.pos = MapGridCell.POS_TOP
+                elif y == bot:
+                    cell.pos = MapGridCell.POS_BOT
+                else:
+                    cell.pos = MapGridCell.POS_CENTER
+
+                self._setGrid(cell, x, y)
 
     def _fillGridForBuilding(self, obj):
         left = obj.pos.x
