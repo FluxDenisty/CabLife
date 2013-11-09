@@ -99,8 +99,6 @@ def tire_vs_groundArea(tireFixture, groundAreaFixture, began):
 def Step(m_car, m_controlState):
     m_car.update(m_controlState)
 
-global window
-
 pygame.init()
 clock = pygame.time.Clock()
 
@@ -109,7 +107,10 @@ world = world(gravity=(0, 0), doSleep=True)
 car = TDCar(world)
 controlState = 0
 
-window = display.set_mode((160, 144))
+size = (160, 144)
+scaledSize = (size[0] * 4, size[1] * 4)
+window = display.set_mode(scaledSize)
+gbScreen = pygame.Surface(size)
 display.set_caption('CabLife')
 display.init()
 
@@ -118,10 +119,10 @@ textSystem = TextSystem()
 
 while True:
     diff = (1000.0 / 59.7)
-    window.fill(Palette.DARK)
+    gbScreen.fill(Palette.DARK)
 
     textSystem.update(diff)
-    textSystem.drawText(window)
+    textSystem.drawText(gbScreen)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -156,7 +157,7 @@ while True:
     rect = [car.m_body.position.x, -car.m_body.position.y, 20, 20]
     rect[0] += 40
     rect[1] += 40
-    draw.rect(window, Palette.LIGHT, rect)
+    draw.rect(gbScreen, Palette.LIGHT, rect)
     '''
 
     for body in (car.GetAllBodies()):  # or: world.bodies
@@ -180,7 +181,8 @@ while True:
             # the y components.
             vertices = [(v[0] + 50, 144 - v[1] - 50) for v in vertices]
 
-            pygame.draw.polygon(window, Palette.NORM, vertices)
+            pygame.draw.polygon(gbScreen, Palette.NORM, vertices)
 
+    pygame.transform.scale(gbScreen, scaledSize, window)
     display.flip()
     clock.tick(59.7)
