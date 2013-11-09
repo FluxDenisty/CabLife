@@ -4,9 +4,12 @@ from pygame import draw
 from pygame import Color
 import sys
 from Box2D.b2 import world
+from Box2D import b2Vec2
 from car import TDCar
 
-PPM = 1.0
+PPM = 1
+
+TILE_SIZE = 6
 
 TDC_LEFT = int('0001', 2)
 TDC_RIGHT = int('0010', 2)
@@ -127,14 +130,17 @@ display.init()
 
 textSystem = TextSystem()
 
+GRID_SIZE = 1000
 grid = []
-for x in xrange(100):
+for x in xrange(GRID_SIZE):
     grid.append([])
-    for y in xrange(100):
+    for y in xrange(GRID_SIZE):
         color = Palette.DARK
         if ((x + y) % 2 == 0):
             color = Palette.LIGHT
         grid[x].append(color)
+
+car.m_body.position = b2Vec2(25 * TILE_SIZE, -25 * TILE_SIZE)
 
 while True:
     diff = (1000.0 / 59.7)
@@ -171,15 +177,29 @@ while True:
     Step(car, controlState)
     world.Step(diff, 10, 10)
 
-    position = car.m_body.position
-    offset = [-position.x, position.y]
+    position = car.m_body.worldCenter
+    offset = [-position.x * PPM, position.y * PPM]
 
-    for x in xrange(100):
-        for y in xrange(100):
-            rect = [x * 20 * PPM, y * 20 * PPM, 20 * PPM, 20 * PPM]
+    offset[0] += size[0] / 2
+    offset[1] += size[1] / 2 - 13
+
+    topLeft = [0, 0]
+    topLeft[0] = int(position.x / TILE_SIZE - 15)
+    topLeft[1] = int(-position.y / TILE_SIZE - 15)
+
+    for x in xrange(topLeft[0], topLeft[0] + 30):
+        for y in xrange(topLeft[1], topLeft[1] + 25):
+            rect = [x * TILE_SIZE * PPM, y * TILE_SIZE * PPM,
+                    TILE_SIZE * PPM, TILE_SIZE * PPM]
             rect[0] += offset[0]
             rect[1] += offset[1]
             pygame.draw.rect(gbScreen, grid[x][y], rect)
+
+    rect = [topLeft[0] * TILE_SIZE * PPM, topLeft[1] * TILE_SIZE * PPM,
+            TILE_SIZE * PPM, TILE_SIZE * PPM]
+    rect[0] += offset[0]
+    rect[1] += offset[1]
+    pygame.draw.rect(gbScreen, pygame.Color("black"), rect)
 
     for body in (car.GetAllBodies()):  # or: world.bodies
         # The body gives us the position and angle of its shapes
@@ -201,8 +221,8 @@ while True:
             # right and downward directions. This means we must flip
             # the y components.
             vertices = [
-                (v[0] + size[0] / 2 + offset[0],
-                 size[1] / 2 - v[1] + offset[1]) for v in vertices]
+                (v[0] + offset[0],
+                 - v[1] + offset[1]) for v in vertices]
 
             pygame.draw.polygon(gbScreen, Palette.NORM, vertices)
 

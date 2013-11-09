@@ -9,8 +9,6 @@ Based on
 http://www.iforce2d.net/src/iforce2d_TopdownCar.h
 '''
 
-
-PPM = 1.0
 DEGTORAD = 0.0174532925199432957
 RADTODEG = 57.295779513082320876
 
@@ -282,6 +280,18 @@ class TDCar(object):
     def __del__(self):
         for i in xrange(len(self.m_tires)):
             self.m_tires[i] = None
+
+    def GetPosition(self):
+        position = b2Vec2(0, 0)
+        i = 0
+        for fixture in self.m_body.fixtures:
+            shape = fixture.shape
+            for v in shape.vertices:
+                position += v
+                i += 1
+        position.x /= i
+        position.y /= i
+        return position
 
     def GetDirection(self):
         '''
