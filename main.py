@@ -118,7 +118,8 @@ car = TDCar(world)
 controlState = 0
 
 size = (160, 144)
-scaledSize = (size[0] * 4, size[1] * 4)
+scale = 5
+scaledSize = (size[0] * scale, size[1] * scale)
 window = display.set_mode(scaledSize)
 gbScreen = pygame.Surface(size)
 display.set_caption('CabLife')
@@ -126,12 +127,18 @@ display.init()
 
 textSystem = TextSystem()
 
+grid = []
+for x in xrange(100):
+    grid.append([])
+    for y in xrange(100):
+        color = Palette.DARK
+        if ((x + y) % 2 == 0):
+            color = Palette.LIGHT
+        grid[x].append(color)
+
 while True:
     diff = (1000.0 / 59.7)
     gbScreen.fill(Palette.DARK)
-
-    textSystem.update(diff)
-    textSystem.drawText(gbScreen)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -164,12 +171,15 @@ while True:
     Step(car, controlState)
     world.Step(diff, 10, 10)
 
-    '''
-    rect = [car.m_body.position.x, -car.m_body.position.y, 20, 20]
-    rect[0] += 40
-    rect[1] += 40
-    draw.rect(gbScreen, Palette.LIGHT, rect)
-    '''
+    position = car.m_body.position
+    offset = [-position.x, position.y]
+
+    for x in xrange(100):
+        for y in xrange(100):
+            rect = [x * 20 * PPM, y * 20 * PPM, 20 * PPM, 20 * PPM]
+            rect[0] += offset[0]
+            rect[1] += offset[1]
+            pygame.draw.rect(gbScreen, grid[x][y], rect)
 
     for body in (car.GetAllBodies()):  # or: world.bodies
         # The body gives us the position and angle of its shapes
@@ -190,9 +200,14 @@ while True:
             # right and up. Pygame, on the other hand, increases in the
             # right and downward directions. This means we must flip
             # the y components.
-            vertices = [(v[0] + 50, 144 - v[1] - 50) for v in vertices]
+            vertices = [
+                (v[0] + size[0] / 2 + offset[0],
+                 size[1] / 2 - v[1] + offset[1]) for v in vertices]
 
             pygame.draw.polygon(gbScreen, Palette.NORM, vertices)
+
+    textSystem.update(diff)
+    textSystem.drawText(gbScreen)
 
     pygame.transform.scale(gbScreen, scaledSize, window)
     display.flip()

@@ -313,7 +313,7 @@ class TDCar(object):
             if (breaking):
                 self.m_body.linearDamping = 0.01
             else:
-                self.m_body.linearDamping = 0
+                self.m_body.linearDamping = 0.001
                 self.m_tires[i].updateDrive(controlState)
 
         # control steering
