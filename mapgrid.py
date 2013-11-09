@@ -1,4 +1,5 @@
 from objimporter import *
+import copy
 
 class MapGridCell(object):
     # types
@@ -36,11 +37,13 @@ class MapGridCell(object):
         if len(string) == 3:
             string += "_"
         string += self.dir
+        c = 1 if self.overlap else 0
+        string += str(c)
 
         return string
 
 class MapGrid(object):
-    EMPTY = "_" * 5
+    EMPTY = "_" * 6
 
     R_LINE_SEP_NUM = 3
 
@@ -57,7 +60,7 @@ class MapGrid(object):
             maxHeight = max(obj.pos.y + obj.dim.h, maxHeight)
 
         # initialize grid
-        self.grid = [[MapGrid.EMPTY for x in range(maxWidth)] for x in range(maxHeight)]
+        self.grid = [[MapGrid.EMPTY for x in xrange(maxWidth)] for x in xrange(maxHeight)]
 
         # for now just differentiate between types
         for obj in objList:
@@ -65,9 +68,34 @@ class MapGrid(object):
             if obj.type == "building":
                 self._fillGridForBuilding(obj)
             elif obj.type == "road":
-                self._fillGridForRoad(obj)
+                if obj.dir == 2:
+                    self._handleTwoDirRoad(obj)
+                else:
+                    self._fillGridForRoad(obj)
             elif obj.type == "sidewalk":
                 self._fillGridForSidewalk(obj)
+
+    def _handleTwoDirRoad(self, obj):
+        isVert = obj.dim.w < obj.dim.h
+        obj.dir = 1
+
+        newObj = copy.deepcopy(obj)
+
+        if isVert:
+            width = (obj.dim.w + 1) / 2
+            obj.dim.w = width
+
+            newObj.dim.w = width
+            newObj.pos.x = obj.pos.x + obj.dim.w - 1
+        else:
+            height = (obj.dim.h + 1) / 2
+            obj.dim.h = height
+
+            newObj.dim.h = height
+            newObj.pos.y = obj.pos.y + obj.dim.h - 1
+
+        self._fillGridForRoad(obj)
+        self._fillGridForRoad(newObj)
 
     def printGrid(self):
         for l in self.grid:
@@ -83,6 +111,11 @@ class MapGrid(object):
 
         # Buildings should never overlap
         if cell.type == MapGridCell.TYPE_BUILDING:
+            return
+
+        # Sidewalks take precedence over roads
+        if cell.type == MapGridCell.TYPE_SIDEWALK:
+            self.grid[y][x] = cell
             return
         
         # handle roads overlapping
@@ -103,8 +136,8 @@ class MapGrid(object):
 
         isVert = obj.dim.w < obj.dim.h
 
-        for x in range(left, right + 1):
-            for y in range(top, bot + 1):
+        for x in xrange(left, right + 1):
+            for y in xrange(top, bot + 1):
                 cell = MapGridCell()
                 cell.type = MapGridCell.TYPE_ROAD
 
@@ -141,8 +174,8 @@ class MapGrid(object):
         top = obj.pos.y
         bot = obj.pos.y + obj.dim.h - 1 
 
-        for x in range(left, right + 1):
-            for y in range(top, bot + 1):
+        for x in xrange(left, right + 1):
+            for y in xrange(top, bot + 1):
                 cell = MapGridCell()
                 cell.type = MapGridCell.TYPE_SIDEWALK
 
@@ -175,8 +208,8 @@ class MapGrid(object):
         top = obj.pos.y
         bot = obj.pos.y + obj.dim.h - 1 
 
-        for x in range(left, right + 1):
-            for y in range(top, bot + 1):
+        for x in xrange(left, right + 1):
+            for y in xrange(top, bot + 1):
                 cell = MapGridCell()
                 cell.type = MapGridCell.TYPE_BUILDING
 

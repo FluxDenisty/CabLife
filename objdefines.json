@@ -2,12 +2,16 @@
     {"name":"road",
      "type":"road",
      "pos":{"x":5, "y":0},
-     "dim":{"w":4, "h":10}},
+     "dim":{"w":5, "h":15},
+     "dir":2
+    },
 
     {"name":"road",
      "type":"road",
      "pos":{"x":0, "y":0},
-     "dim":{"w":10, "h":7}},
+     "dim":{"w":12, "h":10},
+     "dir":1
+    },
 
     {"name":"sidewalk",
      "type":"sidewalk",
