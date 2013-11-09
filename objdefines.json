@@ -1,16 +1,16 @@
 [
     {"name":"road",
-     "type":"passable",
-     "pos":{"x":10, "y":20},
-     "dim":{"w":100, "h":200}},
+     "type":"road",
+     "pos":{"x":0, "y":0},
+     "dim":{"w":10, "h":5}},
 
     {"name":"sidewalk",
-     "type":"semipassable",
-     "pos":{"x":40, "y":50},
-     "dim":{"w":300, "h":50}},
+     "type":"sidewalk",
+     "pos":{"x":2, "y":0},
+     "dim":{"w":5, "h":7}},
 
     {"name":"building",
-     "type":"impassable",
-     "pos":{"x":70, "y":60},
-     "dim":{"w":50, "h":70}}
+     "type":"building",
+     "pos":{"x":1, "y":1},
+     "dim":{"w":5, "h":5}}
 ]
