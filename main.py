@@ -96,8 +96,18 @@ def tire_vs_groundArea(tireFixture, groundAreaFixture, began):
         tire.removeGroundArea(gaFud)
 
 
-def Step(m_car, m_controlState):
-    m_car.update(m_controlState)
+global breaking
+breaking = False
+
+
+def Step(car, m_controlState):
+    global breaking
+    direction = car.GetDirection()
+    if ((controlState & TDC_UP and direction == -1) or
+            (controlState & TDC_DOWN and direction == 1)):
+        breaking = True
+
+    car.update(m_controlState, breaking)
 
 pygame.init()
 clock = pygame.time.Clock()
@@ -115,7 +125,6 @@ display.set_caption('CabLife')
 display.init()
 
 textSystem = TextSystem()
-
 
 while True:
     diff = (1000.0 / 59.7)
@@ -147,8 +156,10 @@ while True:
                 controlState &= ~TDC_RIGHT
             elif event.key == pygame.K_w:
                 controlState &= ~TDC_UP
+                breaking = False
             elif event.key == pygame.K_s:
                 controlState &= ~TDC_DOWN
+                breaking = False
 
     Step(car, controlState)
     world.Step(diff, 10, 10)
