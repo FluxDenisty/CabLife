@@ -2,6 +2,7 @@ from Box2D import b2BodyDef, b2RevoluteJointDef
 from Box2D import b2_dynamicBody, b2PolygonShape
 from Box2D import b2Dot, b2Vec2, b2DestructionListener
 import numpy
+import math
 
 '''
 Based on
@@ -196,7 +197,7 @@ class TDCar(object):
         bodyDef.type = b2_dynamicBody
         bodyDef.restitution = 0.1
         self.m_body = world.CreateBody(bodyDef)
-        self.m_body.angularDamping = 3
+        self.m_body.angularDamping = 5
 
         vertices = []
         for i in xrange(8):
@@ -212,7 +213,7 @@ class TDCar(object):
         polygonShape = b2PolygonShape(vertices=vertices)
         self.m_body.CreateFixture(
             shape=polygonShape,
-            density=2.0,
+            density=100.0,
         )
 
         # prepare common joint parameters
@@ -227,8 +228,8 @@ class TDCar(object):
         maxBackwardSpeed = -40
         backTireMaxDriveForce = 50
         frontTireMaxDriveForce = 100
-        backTireMaxLateralImpulse = 2.5
-        frontTireMaxLateralImpulse = 1.5
+        backTireMaxLateralImpulse = 1.5
+        frontTireMaxLateralImpulse = 0.5
 
         # back left tire
         tire = TDTire(world)
@@ -282,6 +283,22 @@ class TDCar(object):
         for i in xrange(len(self.m_tires)):
             self.m_tires[i] = None
 
+    def GetDirection(self):
+        '''
+        1 for forward
+        -1 for backward
+        0 for stopped
+        '''
+        vel = self.m_body.linearVelocity
+        angle = -self.m_body.angle
+        y = vel.x * math.sin(angle) + vel.y * math.cos(angle)
+        ret = 0
+        if (y > 0):
+            ret = 1
+        elif (y < 0):
+            ret = -1
+        return ret
+
     def GetAllBodies(self):
         ret = []
         ret.append(self.m_body)
@@ -289,11 +306,15 @@ class TDCar(object):
             ret.append(tire.m_body)
         return ret
 
-    def update(self, controlState):
+    def update(self, controlState, breaking):
         for i in xrange(len(self.m_tires)):
             self.m_tires[i].updateFriction()
         for i in xrange(len(self.m_tires)):
-            self.m_tires[i].updateDrive(controlState)
+            if (breaking):
+                self.m_body.linearDamping = 0.01
+            else:
+                self.m_body.linearDamping = 0.001
+                self.m_tires[i].updateDrive(controlState)
 
         # control steering
         lockAngle = 35 * DEGTORAD
