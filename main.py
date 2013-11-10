@@ -10,6 +10,7 @@ from car import TDCar, CarTireFUD
 from textsystem import Palette, TextSystem
 from mapgrid import MapGrid
 from mapobject import MapObject
+import math
 
 PPM = 1
 
@@ -26,9 +27,10 @@ FUD_GROUND_AREA = 1
 
 class ContactListener(b2ContactListener):
 
-    def __init__(self, textSystem):
+    def __init__(self, textSystem, car):
         b2ContactListener.__init__(self)
         self.textSystem = textSystem
+        self.playerCar = car
 
     def handleContact(self, contact, began):
         if (not began):
@@ -47,7 +49,7 @@ class ContactListener(b2ContactListener):
             player = fudB
             other = fudA
 
-        if (player is None or other is None):
+        if (player is None or other is None or player.car is not self.playerCar):
             return
 
         if (type(other) == MapObject):
@@ -91,12 +93,13 @@ world = world(gravity=(0, 0), doSleep=True)
 
 textSystem = TextSystem()
 
-world.contactListener = ContactListener(textSystem)
-
 car = TDCar(world)
+
+world.contactListener = ContactListener(textSystem, car)
 
 objects = []
 pickups = []
+otherCars = []
 
 data = ObjImporter.readFile("objdefines.json")
 for o in data:
@@ -134,6 +137,17 @@ for o in data:
         o.m_body = body
         o.done = False
         pickups.append(body)
+    elif o.name == "car":
+        pos = b2Vec2(o.pos.x * TILE_SIZE, -o.pos.y * TILE_SIZE)
+        dim = b2Vec2(o.dim.w * TILE_SIZE, o.dim.h * TILE_SIZE)
+        otherCar = TDCar(world, pos)
+        angle = 0
+        if (o.dim.h == 1):
+            angle = math.pi
+        else:
+            angle = -o.dim.w * math.pi / 2.0
+        otherCar.m_body.__SetTransform(pos, angle)
+        otherCars.append(otherCar)
 
 prev = pickups[len(pickups) - 1].userData
 for body in pickups:
@@ -229,30 +243,31 @@ while True:
     #sprite.rect.topleft = [position[0] + offset[0] - 12, -position[1] + offset[1] - 15]
     #gbScreen.blit(sprite.image, sprite.rect)
 
-    for body in (car.GetAllBodies()):  # or: world.bodies
-        # The body gives us the position and angle of its shapes
-        for fixture in body.fixtures:
-            # The fixture holds information like density and friction,
-            # and also the shape.
-            shape = fixture.shape
+    for drawCar in ([car] + otherCars):
+        for body in (drawCar.GetAllBodies()):
+            # The body gives us the position and angle of its shapes
+            for fixture in body.fixtures:
+                # The fixture holds information like density and friction,
+                # and also the shape.
+                shape = fixture.shape
 
-            # Naively assume that this is a polygon shape. (not good normally!)
-            # We take the body's transform and multiply it with each
-            # vertex, and then convert from meters to pixels with the scale
-            # factor.
-            vertices = [(body.transform * v) * PPM for v in shape.vertices]
+                # Naively assume that this is a polygon shape. (not good normally!)
+                # We take the body's transform and multiply it with each
+                # vertex, and then convert from meters to pixels with the scale
+                # factor.
+                vertices = [(body.transform * v) * PPM for v in shape.vertices]
 
-            ## But wait! It's upside-down! Pygame and Box2D orient their
-            # axes in different ways. Box2D is just like how you learned
-            # in high school, with positive x and y directions going
-            # right and up. Pygame, on the other hand, increases in the
-            # right and downward directions. This means we must flip
-            # the y components.
-            vertices = [
-                (v[0] + offset[0],
-                 - v[1] + offset[1]) for v in vertices]
+                ## But wait! It's upside-down! Pygame and Box2D orient their
+                # axes in different ways. Box2D is just like how you learned
+                # in high school, with positive x and y directions going
+                # right and up. Pygame, on the other hand, increases in the
+                # right and downward directions. This means we must flip
+                # the y components.
+                vertices = [
+                    (v[0] + offset[0],
+                     - v[1] + offset[1]) for v in vertices]
 
-            pygame.draw.polygon(gbScreen, Palette.NORM, vertices)
+                pygame.draw.polygon(gbScreen, Palette.NORM, vertices)
 
     for body in pickups:
         if (

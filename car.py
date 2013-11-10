@@ -53,7 +53,7 @@ class GroundAreaFUD(FixtureUserData):
 
 class TDTire(object):
 
-    def __init__(self, world):
+    def __init__(self, world, car):
         self.m_maxForwardSpeed = 0
         self.m_maxBackwardSpeed = 0
         self.m_maxDriveForce = 0
@@ -63,12 +63,14 @@ class TDTire(object):
         bodyDef = b2BodyDef()
         bodyDef.type = b2_dynamicBody
         bodyDef.restitution = 0.1
+        bodyDef.position = car.m_body.position
         self.m_body = world.CreateBody(bodyDef)
 
         polygonShape = b2PolygonShape()
         polygonShape.SetAsBox(0.5, 1.25)
-        fixture = self.m_body.CreateFixture(shape=polygonShape, density=5)
+        fixture = self.m_body.CreateFixture(shape=polygonShape, density=5, isSensor=True)
         fixture.userData = CarTireFUD()
+        fixture.userData.car = car
 
         self.m_body.userData = self
 
@@ -187,19 +189,28 @@ class TDTire(object):
 
 class TDCar(object):
 
-    def __init__(self, world):
+    def __init__(self, world, pos=None):
+        if (pos is None):
+            pos = b2Vec2(0, 0)
         self.m_tires = []
 
         # create car body
         bodyDef = b2BodyDef()
         bodyDef.type = b2_dynamicBody
         bodyDef.restitution = 0.1
+        bodyDef.position = pos
         self.m_body = world.CreateBody(bodyDef)
         self.m_body.angularDamping = 5
+        self.m_body.linearDamping = 1
 
         vertices = []
-        for i in xrange(8):
+        for i in xrange(4):
             vertices.append(b2Vec2())
+        vertices[0].Set(-5.6, 0)
+        vertices[1].Set(-5.6, 20)
+        vertices[2].Set(5.6, 20)
+        vertices[3].Set(5.6, 0)
+        '''
         vertices[0].Set(3, 0)
         vertices[1].Set(6, 5)
         vertices[2].Set(5.6, 11)
@@ -208,6 +219,7 @@ class TDCar(object):
         vertices[5].Set(-5.6, 11)
         vertices[6].Set(-6, 5)
         vertices[7].Set(-3, 0)
+        '''
         polygonShape = b2PolygonShape(vertices=vertices)
         self.m_body.CreateFixture(
             shape=polygonShape,
@@ -230,7 +242,7 @@ class TDCar(object):
         frontTireMaxLateralImpulse = 0.5
 
         # back left tire
-        tire = TDTire(world)
+        tire = TDTire(world, self)
         tire.setCharacteristics(
             maxForwardSpeed,
             maxBackwardSpeed,
@@ -242,7 +254,7 @@ class TDCar(object):
         self.m_tires.append(tire)
 
         # back right tire
-        tire = TDTire(world)
+        tire = TDTire(world, self)
         tire.setCharacteristics(
             maxForwardSpeed,
             maxBackwardSpeed,
@@ -254,7 +266,7 @@ class TDCar(object):
         self.m_tires.append(tire)
 
         # front left tire
-        tire = TDTire(world)
+        tire = TDTire(world, self)
         tire.setCharacteristics(
             maxForwardSpeed,
             maxBackwardSpeed,
@@ -266,7 +278,7 @@ class TDCar(object):
         self.m_tires.append(tire)
 
         # front right tire
-        tire = TDTire(world)
+        tire = TDTire(world, self)
         tire.setCharacteristics(
             maxForwardSpeed,
             maxBackwardSpeed,
