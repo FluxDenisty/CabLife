@@ -191,6 +191,14 @@ while True:
 
                 pygame.draw.polygon(gbScreen, Palette.NORM, vertices)
 
+    if (textSystem.state == "driving"):
+        vec = textSystem.passenger.dest.m_body.worldCenter - car.m_body.worldCenter
+        vec.Normalize()
+        vec.x *= 15
+        vec.y *= -15
+        rect = (int(vec.x) + size[0] / 2, int(vec.y) + 118 / 2, 2, 2)
+        pygame.draw.rect(gbScreen, Palette.BRIGHT, rect)
+
     for body in pickups:
         if (
                 (textSystem.state == "find" and
