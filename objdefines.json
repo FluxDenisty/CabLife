@@ -1,8 +1,35 @@
 [
     {"name":"road",
      "kind":"road",
-     "pos":{"x":0, "y":0},
-     "dim":{"w":49, "h":50},
+     "pos":{"x":5, "y":0},
+     "dim":{"w":5, "h":15},
      "direc":2
-    }
+    },
+
+    {"name":"road",
+     "kind":"road",
+     "pos":{"x":0, "y":0},
+     "dim":{"w":12, "h":10},
+     "direc":1
+    },
+
+    {"name":"building",
+     "kind":"building",
+     "pos":{"x":10, "y":10},
+     "dim":{"w":5, "h":5}},
+
+    {"name":"pickup",
+     "kind":"pickup",
+     "pos":{"x":0, "y":10},
+     "dim":{"w":2, "h":5}},
+
+    {"name":"pickup",
+     "kind":"pickup",
+     "pos":{"x":10, "y":20},
+     "dim":{"w":2, "h":5}},
+
+    {"name":"pickup",
+     "kind":"pickup",
+     "pos":{"x":20, "y":10},
+     "dim":{"w":2, "h":5}}
 ]
