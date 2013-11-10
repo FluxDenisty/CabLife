@@ -29,12 +29,12 @@ class Dimension(object):
 
 
 class MapObject(object):
-    def __init__(self, name, type, pos, dim, dir):
+    def __init__(self, name, type, pos, dim, direc):
         self.name = name
         self.type = type
         self.pos = pos
         self.dim = dim
-        self.dir = dir
+        self.direc = direc
 
     def __repr__(self):
         return self.__str__()
