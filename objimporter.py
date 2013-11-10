@@ -14,12 +14,12 @@ class ObjImporter(object):
             name = data["name"]
             pos = Position(data["pos"]["x"], data["pos"]["y"])
             dim = Dimension(data["dim"]["w"], data["dim"]["h"])
-            type = data["type"]
-            dir = 1
-            if "dir" in data:
-                dir = data["dir"]
+            kind = data["kind"]
+            direc = 1
+            if "direc" in data:
+                direc = data["direc"]
 
-            obj = MapObject(name, type, pos, dim, dir)
+            obj = MapObject(name, kind, pos, dim, direc)
             objList.append(obj)
 
         return objList

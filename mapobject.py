@@ -29,9 +29,9 @@ class Dimension(object):
 
 
 class MapObject(object):
-    def __init__(self, name, type, pos, dim, direc):
+    def __init__(self, name, kind, pos, dim, direc):
         self.name = name
-        self.type = type
+        self.kind = kind
         self.pos = pos
         self.dim = dim
         self.direc = direc
@@ -40,5 +40,5 @@ class MapObject(object):
         return self.__str__()
 
     def __str__(self):
-        return ("<MapObject name:%s type:%s pos:%s dim:%s>"
-                % (self.name, self.type, self.pos, self.dim))
+        return ("<MapObject name:%s kind:%s pos:%s dim:%s>"
+                % (self.name, self.kind, self.pos, self.dim))
