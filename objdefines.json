@@ -21,5 +21,10 @@
     {"name":"building",
      "kind":"building",
      "pos":{"x":10, "y":10},
-     "dim":{"w":5, "h":5}}
+     "dim":{"w":5, "h":5}},
+
+    {"name":"pickup",
+     "kind":"pickup",
+     "pos":{"x":0, "y":10},
+     "dim":{"w":2, "h":2}}
 ]

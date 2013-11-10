@@ -6,7 +6,8 @@ import sys
 from Box2D.b2 import world
 from objimporter import ObjImporter
 from Box2D import b2Vec2
-from Box2D import b2BodyDef, b2PolygonShape, b2_staticBody
+from Box2D import b2BodyDef, b2PolygonShape, b2_staticBody, b2CircleShape
+from Box2D import b2FixtureDef, b2ContactListener
 from car import TDCar
 
 PPM = 1
@@ -67,38 +68,35 @@ class TextSystem(object):
         window.blit(label, (3, 130))
 
 
-def handleContact(contact, began):
-    a = contact.GetFixtureA()
-    b = contact.GetFixtureB()
-    fudA = a.userData
-    fudB = b.userData
+class ContactListener(b2ContactListener):
 
-    if (fudA is None or fudB is None):
+    def __init__(self):
+        b2ContactListener.__init__(self)
+
+    def handleContact(self, contact, began):
         return
+        a = contact.GetFixtureA()
+        b = contact.GetFixtureB()
+        fudA = a.userData
+        fudB = b.userData
 
-    if (fudA.getType() == FUD_CAR_TIRE or
-            fudB.getType() == FUD_GROUND_AREA):
-        tire_vs_groundArea(a, b, began)
-    elif (fudA.getType() == FUD_GROUND_AREA or
-            fudB.getType() == FUD_CAR_TIRE):
-        tire_vs_groundArea(b, a, began)
+        if (fudA is None or fudB is None):
+            return
+        # TODO
 
+    def BeginContact(self, contact):
+        self.handleContact(contact, True)
 
-def BeginContact(contact):
-    handleContact(contact, True)
+    def EndContact(self, contact):
+        self.handleContact(contact, False)
 
-
-def EndContact(contact):
-    handleContact(contact, False)
-
-
-def tire_vs_groundArea(tireFixture, groundAreaFixture, began):
-    tire = tireFixture.body.userData
-    gaFud = groundAreaFixture.userData
-    if (began):
-        tire.addGroundArea(gaFud)
-    else:
-        tire.removeGroundArea(gaFud)
+    def tire_vs_groundArea(tireFixture, groundAreaFixture, began):
+        tire = tireFixture.body.userData
+        gaFud = groundAreaFixture.userData
+        if (began):
+            tire.addGroundArea(gaFud)
+        else:
+            tire.removeGroundArea(gaFud)
 
 
 global breaking
@@ -118,10 +116,13 @@ pygame.init()
 clock = pygame.time.Clock()
 
 world = world(gravity=(0, 0), doSleep=True)
+world.contactListener = ContactListener()
 
 car = TDCar(world)
 
 objects = []
+pickups = []
+
 data = ObjImporter.readFile("objdefines.json")
 for o in data:
     if o.name == "building":
@@ -137,6 +138,22 @@ for o in data:
         fixture = body.CreateFixture(shape=polygonShape)
         fixture.userData = o
         objects.append(body)
+    elif o.name == "pickup":
+        pos = b2Vec2(o.pos.x * TILE_SIZE, o.pos.y * TILE_SIZE)
+        dim = b2Vec2(o.dim.w * TILE_SIZE, o.dim.h * TILE_SIZE)
+        bodyDef = b2BodyDef()
+        bodyDef.type = b2_staticBody
+        bodyDef.userData = o
+        bodyDef.position = pos
+        body = world.CreateBody(bodyDef)
+        circleShape = b2CircleShape()
+        circleShape.radius = dim.x
+        fixtureDef = b2FixtureDef()
+        fixtureDef.shape = circleShape
+        fixtureDef.isSensor = True
+        fixture = body.CreateFixture(fixtureDef)
+        fixture.userData = o
+        pickups.append(body)
 
 controlState = 0
 
@@ -220,6 +237,18 @@ while True:
     rect[0] += offset[0]
     rect[1] += offset[1]
     pygame.draw.rect(gbScreen, pygame.Color("black"), rect)
+
+    for body in pickups:
+        pos = body.worldCenter.copy()
+        pos.x *= PPM
+        pos.y *= -PPM
+        pos.x += offset[0]
+        pos.y += offset[1]
+        pygame.draw.circle(
+            gbScreen,
+            Palette.BRIGHT,
+            (int(pos.x), int(pos.y)),
+            int(body.fixtures[0].shape.radius * PPM))
 
     for body in (car.GetAllBodies() + objects):  # or: world.bodies
         # The body gives us the position and angle of its shapes
