@@ -1,15 +1,15 @@
 import pygame
 from pygame import display
-from pygame import draw
-from pygame import Color
 import sys
 from Box2D.b2 import world
 from objimporter import ObjImporter
 from Box2D import b2Vec2
 from Box2D import b2BodyDef, b2PolygonShape, b2_staticBody, b2CircleShape
 from Box2D import b2FixtureDef, b2ContactListener
-from car import TDCar
+from car import TDCar, CarTireFUD
+from textsystem import Palette, TextSystem
 from mapgrid import MapGrid
+from mapobject import MapObject
 
 PPM = 1
 
@@ -24,66 +24,37 @@ FUD_CAR_TIRE = 0
 FUD_GROUND_AREA = 1
 
 
-class Palette(object):
-    '''
-    A convience object for the 4 available colours
-    '''
-    DARK = Color(15, 56, 15)
-    NORM = Color(48, 98, 48)
-    LIGHT = Color(139, 172, 15)
-    BRIGHT = Color(155, 188, 15)
-
-
-class TextSystem(object):
-
-    def __init__(self):
-        self.timer = 0
-        self.animTime = 3000
-        self.font = pygame.font.SysFont("monospace", 12)
-
-    def update(self, diff):
-        self.timer += diff
-
-    def getText(self):
-        text = [
-            "WWWWWWWWWWWWWWWWWWWWWW",
-            "WWWWWWWWWWWWWWWWWWWWWW"]
-        length = (len(text[0]) + len(text[1]))
-        progress = int((self.timer / self.animTime) * length)
-        if (progress < len(text[0])):
-            text[0] = text[0][:progress]
-            text[1] = ""
-        elif (progress < length):
-            text[1] = text[1][:progress - len(text[0])]
-
-        return text
-
-    def drawText(self, window):
-        rect = (0, 118, 160, 144 - 118)
-        draw.rect(window, Palette.NORM, rect)
-
-        text = self.getText()
-        label = self.font.render(text[0], False, Palette.LIGHT)
-        window.blit(label, (3, 120))
-        label = self.font.render(text[1], False, Palette.LIGHT)
-        window.blit(label, (3, 130))
-
-
 class ContactListener(b2ContactListener):
 
-    def __init__(self):
+    def __init__(self, textSystem):
         b2ContactListener.__init__(self)
+        self.textSystem = textSystem
 
     def handleContact(self, contact, began):
-        return
-        a = contact.GetFixtureA()
-        b = contact.GetFixtureB()
+        if (not began):
+            return
+        a = contact.fixtureA
+        b = contact.fixtureB
         fudA = a.userData
         fudB = b.userData
 
-        if (fudA is None or fudB is None):
+        player = None
+        other = None
+        if (type(fudA) == CarTireFUD):
+            player = fudA
+            other = fudB
+        elif (type(fudB) == CarTireFUD):
+            player = fudB
+            other = fudA
+
+        if (player is None or other is None):
             return
-        # TODO
+
+        if (type(other) == MapObject):
+            if (textSystem.state == "find" and other.name == "pickup"):
+                self.textSystem.pickup(other)
+            if (textSystem.state == "driving" and other.name == "pickup"):
+                self.textSystem.dropoff(other)
 
     def BeginContact(self, contact):
         self.handleContact(contact, True)
@@ -117,7 +88,10 @@ pygame.init()
 clock = pygame.time.Clock()
 
 world = world(gravity=(0, 0), doSleep=True)
-world.contactListener = ContactListener()
+
+textSystem = TextSystem()
+
+world.contactListener = ContactListener(textSystem)
 
 car = TDCar(world)
 
@@ -138,6 +112,8 @@ for o in data:
         polygonShape.SetAsBox(dim.x, dim.y)
         fixture = body.CreateFixture(shape=polygonShape)
         fixture.userData = o
+        body.userData = o
+        o.m_body = body
         objects.append(body)
     elif o.name == "pickup":
         pos = b2Vec2(o.pos.x * TILE_SIZE, -o.pos.y * TILE_SIZE)
@@ -154,7 +130,15 @@ for o in data:
         fixtureDef.isSensor = True
         fixture = body.CreateFixture(fixtureDef)
         fixture.userData = o
+        body.userData = o
+        o.m_body = body
+        o.done = False
         pickups.append(body)
+
+prev = pickups[len(pickups) - 1].userData
+for body in pickups:
+    body.userData.dest = prev
+    prev = body.userData
 
 controlState = 0
 
@@ -165,8 +149,6 @@ window = display.set_mode(scaledSize)
 gbScreen = pygame.Surface(size)
 display.set_caption('CabLife')
 display.init()
-
-textSystem = TextSystem()
 
 mapGrid = MapGrid()
 mapGrid.createGrid(data)
@@ -247,7 +229,7 @@ while True:
     #sprite.rect.topleft = [position[0] + offset[0] - 12, -position[1] + offset[1] - 15]
     #gbScreen.blit(sprite.image, sprite.rect)
 
-    for body in (car.GetAllBodies() + objects):  # or: world.bodies
+    for body in (car.GetAllBodies()):  # or: world.bodies
         # The body gives us the position and angle of its shapes
         for fixture in body.fixtures:
             # The fixture holds information like density and friction,
@@ -273,17 +255,22 @@ while True:
             pygame.draw.polygon(gbScreen, Palette.NORM, vertices)
 
     for body in pickups:
-        pos = body.worldCenter.copy()
-        pos.x *= PPM
-        pos.y *= -PPM
-        pos.x += offset[0]
-        pos.y += offset[1]
-        pygame.draw.circle(
-            gbScreen,
-            Palette.BRIGHT,
-            (int(pos.x), int(pos.y)),
-            int(body.fixtures[0].shape.radius * PPM))
-
+        if (
+                (textSystem.state == "find" and
+                 textSystem.ignore != body.userData and
+                 body.userData.done is False) or
+                (textSystem.state == "driving" and
+                 textSystem.passenger.dest == body.userData)):
+            pos = body.worldCenter.copy()
+            pos.x *= PPM
+            pos.y *= -PPM
+            pos.x += offset[0]
+            pos.y += offset[1]
+            pygame.draw.circle(
+                gbScreen,
+                Palette.BRIGHT,
+                (int(pos.x), int(pos.y)),
+                int(body.fixtures[0].shape.radius * PPM))
 
     textSystem.update(diff)
     textSystem.drawText(gbScreen)
