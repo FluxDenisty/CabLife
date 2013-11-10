@@ -159,7 +159,7 @@ for o in data:
 controlState = 0
 
 size = (160, 144)
-scale = 5
+scale = 1
 scaledSize = (size[0] * scale, size[1] * scale)
 window = display.set_mode(scaledSize)
 gbScreen = pygame.Surface(size)
@@ -171,6 +171,11 @@ textSystem = TextSystem()
 mapGrid = MapGrid()
 mapGrid.createGrid(data)
 grid = mapGrid.grid
+sprites = mapGrid.getUsedSpritesDict()
+for key in sprites.keys():
+    sprite_dir = "./sprite/"
+    sprite_dir += key
+    sprites[key] = pygame.image.load(sprite_dir).convert()
 
 car.m_body.position = b2Vec2(25 * TILE_SIZE, -25 * TILE_SIZE)
 
@@ -221,12 +226,11 @@ while True:
 
     for x in xrange(topLeft[0], topLeft[0] + 30):
         for y in xrange(topLeft[1], topLeft[1] + 27):
+            if len(grid) <= y or len(grid[y]) <= x or y < 0 or x < 0:
+                continue
+
             sprite = pygame.sprite.Sprite()
-            # TODO: later change s.t. load images in game
-            #       start and just reference dict
-            sprite_dir = "./sprite/"
-            sprite_dir += grid[y][x].getSpriteName()
-            sprite.image = pygame.image.load(sprite_dir).convert()
+            sprite.image = sprites[grid[y][x].getSpriteName()]
             drawPos = [x * TILE_SIZE * PPM, y * TILE_SIZE * PPM,
                        TILE_SIZE * PPM, TILE_SIZE * PPM]
             drawPos[0] += offset[0]

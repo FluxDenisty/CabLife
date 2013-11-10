@@ -122,7 +122,7 @@ class MapGrid(object):
                 print cell,
             print
 
-    def printSprites(self):
+    def getUsedSpritesDict(self):
         dic = {}
         for l in self.grid:
             for cell in l:
@@ -132,7 +132,8 @@ class MapGrid(object):
                 string = cell.getSpriteName()
                 if not(string in dic):
                     dic[string] = 1
-                    print string
+                    #print string
+        return dic
 
     def _setGrid(self, cell, x, y):
         # if there's no overlap, just set it
