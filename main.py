@@ -4,12 +4,10 @@ import sys
 from Box2D.b2 import world
 from objimporter import ObjImporter
 from Box2D import b2Vec2
-from Box2D import b2BodyDef, b2PolygonShape, b2_staticBody, b2CircleShape
-from Box2D import b2FixtureDef, b2ContactListener
-from car import TDCar, CarTireFUD
 from textsystem import Palette, TextSystem
 from mapgrid import MapGrid
-from mapobject import MapObject
+from contactlistener import ContactListener
+from car import TDCar
 import math
 
 PPM = 1
@@ -23,54 +21,6 @@ TDC_DOWN = int('1000', 2)
 
 FUD_CAR_TIRE = 0
 FUD_GROUND_AREA = 1
-
-
-class ContactListener(b2ContactListener):
-
-    def __init__(self, textSystem, car):
-        b2ContactListener.__init__(self)
-        self.textSystem = textSystem
-        self.playerCar = car
-
-    def handleContact(self, contact, began):
-        if (not began):
-            return
-        a = contact.fixtureA
-        b = contact.fixtureB
-        fudA = a.userData
-        fudB = b.userData
-
-        player = None
-        other = None
-        if (type(fudA) == CarTireFUD):
-            player = fudA
-            other = fudB
-        elif (type(fudB) == CarTireFUD):
-            player = fudB
-            other = fudA
-
-        if (player is None or other is None or player.car is not self.playerCar):
-            return
-
-        if (type(other) == MapObject):
-            if (textSystem.state == "find" and other.name == "pickup"):
-                self.textSystem.pickup(other)
-            if (textSystem.state == "driving" and other.name == "pickup"):
-                self.textSystem.dropoff(other)
-
-    def BeginContact(self, contact):
-        self.handleContact(contact, True)
-
-    def EndContact(self, contact):
-        self.handleContact(contact, False)
-
-    def tire_vs_groundArea(tireFixture, groundAreaFixture, began):
-        tire = tireFixture.body.userData
-        gaFud = groundAreaFixture.userData
-        if (began):
-            tire.addGroundArea(gaFud)
-        else:
-            tire.removeGroundArea(gaFud)
 
 
 global breaking
@@ -104,38 +54,10 @@ otherCars = []
 data = ObjImporter.readFile("objdefines.json")
 for o in data:
     if o.name == "building":
-        pos = b2Vec2(o.pos.x * TILE_SIZE + o.dim.w * TILE_SIZE / 2, -o.pos.y * TILE_SIZE - o.dim.h * TILE_SIZE / 2)
-        dim = b2Vec2(o.dim.w * TILE_SIZE / 2, o.dim.h * TILE_SIZE / 2)
-        bodyDef = b2BodyDef()
-        bodyDef.type = b2_staticBody
-        bodyDef.userData = o
-        bodyDef.position = pos
-        body = world.CreateBody(bodyDef)
-        polygonShape = b2PolygonShape()
-        polygonShape.SetAsBox(dim.x, dim.y)
-        fixture = body.CreateFixture(shape=polygonShape)
-        fixture.userData = o
-        body.userData = o
-        o.m_body = body
+        body = o.CreateBody(world, TILE_SIZE)
         objects.append(body)
     elif o.name == "pickup":
-        pos = b2Vec2(o.pos.x * TILE_SIZE, -o.pos.y * TILE_SIZE)
-        dim = b2Vec2(o.dim.w * TILE_SIZE, o.dim.h * TILE_SIZE)
-        bodyDef = b2BodyDef()
-        bodyDef.type = b2_staticBody
-        bodyDef.userData = o
-        bodyDef.position = pos
-        body = world.CreateBody(bodyDef)
-        circleShape = b2CircleShape()
-        circleShape.radius = dim.x
-        fixtureDef = b2FixtureDef()
-        fixtureDef.shape = circleShape
-        fixtureDef.isSensor = True
-        fixture = body.CreateFixture(fixtureDef)
-        fixture.userData = o
-        body.userData = o
-        o.m_body = body
-        o.done = False
+        body = o.CreateBody(world, TILE_SIZE)
         pickups.append(body)
     elif o.name == "car":
         pos = b2Vec2(o.pos.x * TILE_SIZE, -o.pos.y * TILE_SIZE)
