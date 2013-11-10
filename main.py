@@ -8,6 +8,7 @@ from objimporter import ObjImporter
 from Box2D import b2Vec2
 from Box2D import b2BodyDef, b2PolygonShape, b2_staticBody
 from car import TDCar
+from mapgrid import MapGrid
 
 PPM = 1
 
@@ -150,17 +151,11 @@ display.init()
 
 textSystem = TextSystem()
 
-GRID_SIZE = 1000
-grid = []
-for x in xrange(GRID_SIZE):
-    grid.append([])
-    for y in xrange(GRID_SIZE):
-        color = Palette.DARK
-        if ((x + y) % 2 == 0):
-            color = Palette.LIGHT
-        grid[x].append(color)
+mapGrid = MapGrid()
+mapGrid.createGrid(data)
+grid = mapGrid.grid
 
-# car.m_body.position = b2Vec2(25 * TILE_SIZE, -25 * TILE_SIZE)
+car.m_body.position = b2Vec2(25 * TILE_SIZE, -25 * TILE_SIZE)
 
 while True:
     diff = (1000.0 / 59.7)
@@ -209,17 +204,19 @@ while True:
 
     for x in xrange(topLeft[0], topLeft[0] + 30):
         for y in xrange(topLeft[1], topLeft[1] + 27):
-            rect = [x * TILE_SIZE * PPM, y * TILE_SIZE * PPM,
-                    TILE_SIZE * PPM, TILE_SIZE * PPM]
-            rect[0] += offset[0]
-            rect[1] += offset[1]
-            pygame.draw.rect(gbScreen, grid[x][y], rect)
-
-    rect = [topLeft[0] * TILE_SIZE * PPM, topLeft[1] * TILE_SIZE * PPM,
-            TILE_SIZE * PPM, TILE_SIZE * PPM]
-    rect[0] += offset[0]
-    rect[1] += offset[1]
-    pygame.draw.rect(gbScreen, pygame.Color("black"), rect)
+            sprite = pygame.sprite.Sprite()
+            # TODO: later change s.t. load images in game
+            #       start and just reference dict
+            sprite_dir = "./sprite/"
+            sprite_dir += grid[y][x].getSpriteName()
+            sprite.image = pygame.image.load(sprite_dir).convert()
+            drawPos = [x * TILE_SIZE * PPM, y * TILE_SIZE * PPM,
+                       TILE_SIZE * PPM, TILE_SIZE * PPM]
+            drawPos[0] += offset[0]
+            drawPos[1] += offset[1]
+            sprite.rect = sprite.image.get_rect()
+            sprite.rect.topleft = [drawPos[0], drawPos[1]]
+            gbScreen.blit(sprite.image, sprite.rect)
 
     for body in (car.GetAllBodies() + objects):  # or: world.bodies
         # The body gives us the position and angle of its shapes

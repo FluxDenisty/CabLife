@@ -1,6 +1,7 @@
 from objimporter import *
 import copy
 
+
 class MapGridCell(object):
     # kinds
     KIND_BUILDING = "BD"
@@ -23,11 +24,27 @@ class MapGridCell(object):
     DIR_VERT = "V"
     DIR_NEUTRAL = "N"
 
-    def __init__(self, kind="", pos="", direc=DIR_NEUTRAL):
+    def __init__(self, name="", kind="", pos="", direc=DIR_NEUTRAL):
+        self.name = name
         self.kind = kind
         self.pos = pos
         self.direc = direc
         self.overlap = False
+
+    def getSpriteName(self):
+        string = "%s_%s_" % (self.name, self.kind)
+
+        if self.kind == self.KIND_BUILDING or self.kind == self.KIND_SIDEWALK:
+            string += self.pos
+        else:
+            if self.direc == self.DIR_NEUTRAL:
+                string += self.direc
+            else:
+                line_num = "D" if self.overlap else "S"
+                string += "%s_%s" % (self.direc, line_num)
+
+        string += ".png"
+        return string
 
     def __repr__(self):
         return self.__str__()
@@ -42,6 +59,7 @@ class MapGridCell(object):
 
         return string
 
+
 class MapGrid(object):
     EMPTY = "_" * 6
 
@@ -49,18 +67,19 @@ class MapGrid(object):
 
     def __init__(self):
         self.grid = []
+        self.width = 0
+        self.height = 0
 
     def createGrid(self, objList):
         # first get the max width and max height
         # also pivot for objects are bottom left
-        maxWidth = 0
-        maxHeight = 0
         for obj in objList:
-            maxWidth = max(obj.pos.x + obj.dim.w, maxWidth)
-            maxHeight = max(obj.pos.y + obj.dim.h, maxHeight)
+            self.width = max(obj.pos.x + obj.dim.w, self.width)
+            self.height = max(obj.pos.y + obj.dim.h, self.height)
 
         # initialize grid
-        self.grid = [[MapGrid.EMPTY for x in xrange(maxWidth)] for x in xrange(maxHeight)]
+        self.grid = [[MapGrid.EMPTY for x in xrange(self.width)]
+                     for x in xrange(self.height)]
 
         # for now just differentiate between kinds
         for obj in objList:
@@ -101,7 +120,19 @@ class MapGrid(object):
         for l in self.grid:
             for cell in l:
                 print cell,
-            print 
+            print
+
+    def printSprites(self):
+        dic = {}
+        for l in self.grid:
+            for cell in l:
+                if not(isinstance(cell, MapGridCell)):
+                    continue
+
+                string = cell.getSpriteName()
+                if not(string in dic):
+                    dic[string] = 1
+                    print string
 
     def _setGrid(self, cell, x, y):
         # if there's no overlap, just set it
@@ -117,7 +148,7 @@ class MapGrid(object):
         if cell.kind == MapGridCell.KIND_SIDEWALK:
             self.grid[y][x] = cell
             return
-        
+
         # handle roads overlapping
         if cell.direc == self.grid[y][x].direc:
             self.grid[y][x].pos = MapGridCell.POS_CENTER
@@ -127,19 +158,17 @@ class MapGrid(object):
             self.grid[y][x].pos = MapGridCell.POS_CENTER
             self.grid[y][x].overlap = True
 
-
     def _fillGridForRoad(self, obj):
         left = obj.pos.x
         right = obj.pos.x + obj.dim.w - 1
         top = obj.pos.y
-        bot = obj.pos.y + obj.dim.h - 1 
+        bot = obj.pos.y + obj.dim.h - 1
 
         isVert = obj.dim.w < obj.dim.h
 
         for x in xrange(left, right + 1):
             for y in xrange(top, bot + 1):
-                cell = MapGridCell()
-                cell.kind = MapGridCell.KIND_ROAD
+                cell = MapGridCell(obj.name, MapGridCell.KIND_ROAD)
 
                 if isVert:
                     if x == left:
@@ -172,12 +201,11 @@ class MapGrid(object):
         left = obj.pos.x
         right = obj.pos.x + obj.dim.w - 1
         top = obj.pos.y
-        bot = obj.pos.y + obj.dim.h - 1 
+        bot = obj.pos.y + obj.dim.h - 1
 
         for x in xrange(left, right + 1):
             for y in xrange(top, bot + 1):
-                cell = MapGridCell()
-                cell.kind = MapGridCell.KIND_SIDEWALK
+                cell = MapGridCell(obj.name, MapGridCell.KIND_SIDEWALK)
 
                 if x == left:
                     if y == top:
@@ -206,12 +234,11 @@ class MapGrid(object):
         left = obj.pos.x
         right = obj.pos.x + obj.dim.w - 1
         top = obj.pos.y
-        bot = obj.pos.y + obj.dim.h - 1 
+        bot = obj.pos.y + obj.dim.h - 1
 
         for x in xrange(left, right + 1):
             for y in xrange(top, bot + 1):
-                cell = MapGridCell()
-                cell.kind = MapGridCell.KIND_BUILDING
+                cell = MapGridCell(obj.name, MapGridCell.KIND_BUILDING)
 
                 if x == left:
                     if y == top:
@@ -242,3 +269,4 @@ if __name__ == "__main__":
     grid = MapGrid()
     grid.createGrid(data)
     grid.printGrid()
+    grid.printSprites()
