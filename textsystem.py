@@ -34,14 +34,20 @@ class TextSystem(object):
     def __init__(self):
         self.timer = 0
         self.animTime = 3000
+        self.delay = 500
         self.font = pygame.font.SysFont("monospace", 12)
         self.state = "find"
         self.currentText = self.FIND_TEXT
         self.passenger = None
         self.ignore = None
+        self.textStack = []
 
     def update(self, diff):
         self.timer += diff
+        if (len(self.textStack) > 0 and
+                self.timer > self.animTime + self.delay):
+            self.timer = 0
+            self.currentText = self.textStack.pop(0)
 
     def pickup(self, passenger):
         if (self.ignore != passenger and passenger.done is False):
@@ -58,6 +64,7 @@ class TextSystem(object):
             self.timer = 0
             self.state = "find"
             self.currentText = self.DROPOFF_TEXT
+            self.textStack.append(self.FIND_TEXT)
 
     def getText(self):
         text = [self.currentText[0], self.currentText[1]]
