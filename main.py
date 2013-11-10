@@ -4,7 +4,9 @@ from pygame import draw
 from pygame import Color
 import sys
 from Box2D.b2 import world
+from objimporter import ObjImporter
 from Box2D import b2Vec2
+from Box2D import b2BodyDef, b2PolygonShape, b2_staticBody
 from car import TDCar
 
 PPM = 1
@@ -118,6 +120,24 @@ clock = pygame.time.Clock()
 world = world(gravity=(0, 0), doSleep=True)
 
 car = TDCar(world)
+
+objects = []
+data = ObjImporter.readFile("objdefines.json")
+for o in data:
+    if o.name == "building":
+        pos = b2Vec2(o.pos.x * TILE_SIZE, o.pos.y * TILE_SIZE)
+        dim = b2Vec2(o.dim.w * TILE_SIZE, o.dim.h * TILE_SIZE)
+        bodyDef = b2BodyDef()
+        bodyDef.type = b2_staticBody
+        bodyDef.userData = o
+        bodyDef.position = pos
+        body = world.CreateBody(bodyDef)
+        polygonShape = b2PolygonShape()
+        polygonShape.SetAsBox(dim.x, dim.y)
+        fixture = body.CreateFixture(shape=polygonShape)
+        fixture.userData = o
+        objects.append(body)
+
 controlState = 0
 
 size = (160, 144)
@@ -140,7 +160,7 @@ for x in xrange(GRID_SIZE):
             color = Palette.LIGHT
         grid[x].append(color)
 
-car.m_body.position = b2Vec2(25 * TILE_SIZE, -25 * TILE_SIZE)
+# car.m_body.position = b2Vec2(25 * TILE_SIZE, -25 * TILE_SIZE)
 
 while True:
     diff = (1000.0 / 59.7)
@@ -188,7 +208,7 @@ while True:
     topLeft[1] = int(-position.y / TILE_SIZE - 15)
 
     for x in xrange(topLeft[0], topLeft[0] + 30):
-        for y in xrange(topLeft[1], topLeft[1] + 25):
+        for y in xrange(topLeft[1], topLeft[1] + 27):
             rect = [x * TILE_SIZE * PPM, y * TILE_SIZE * PPM,
                     TILE_SIZE * PPM, TILE_SIZE * PPM]
             rect[0] += offset[0]
@@ -201,7 +221,7 @@ while True:
     rect[1] += offset[1]
     pygame.draw.rect(gbScreen, pygame.Color("black"), rect)
 
-    for body in (car.GetAllBodies()):  # or: world.bodies
+    for body in (car.GetAllBodies() + objects):  # or: world.bodies
         # The body gives us the position and angle of its shapes
         for fixture in body.fixtures:
             # The fixture holds information like density and friction,
