@@ -177,8 +177,6 @@ for key in sprites.keys():
     sprite_dir += key
     sprites[key] = pygame.image.load(sprite_dir).convert()
 
-sprites["car.png"] = pygame.image.load("./sprite/car.png").convert()
-
 #car.m_body.position = b2Vec2(25 * TILE_SIZE, -25 * TILE_SIZE)
 
 while True:
@@ -226,6 +224,29 @@ while True:
     topLeft[0] = int(position.x / TILE_SIZE - 15)
     topLeft[1] = int(-position.y / TILE_SIZE - 15)
 
+    for x in xrange(topLeft[0], topLeft[0] + 30):
+        for y in xrange(topLeft[1], topLeft[1] + 27):
+            if (y < 0 or x < 0 or len(grid) <= y or len(grid[y]) <= x):
+                continue
+            if isinstance(grid[y][x], str):
+                continue
+
+            sprite = pygame.sprite.Sprite()
+            sprite.image = sprites[grid[y][x].getSpriteName()]
+            drawPos = [x * TILE_SIZE * PPM, y * TILE_SIZE * PPM,
+                       TILE_SIZE * PPM, TILE_SIZE * PPM]
+            drawPos[0] += offset[0]
+            drawPos[1] += offset[1]
+            sprite.rect = sprite.image.get_rect()
+            sprite.rect.topleft = [drawPos[0], drawPos[1]]
+            gbScreen.blit(sprite.image, sprite.rect)
+
+    #sprite = pygame.sprite.Sprite()
+    #sprite.image = sprites["car.png"]
+    #sprite.rect = sprite.image.get_rect()
+    #sprite.rect.topleft = [position[0] + offset[0] - 12, -position[1] + offset[1] - 15]
+    #gbScreen.blit(sprite.image, sprite.rect)
+
     for body in (car.GetAllBodies() + objects):  # or: world.bodies
         # The body gives us the position and angle of its shapes
         for fixture in body.fixtures:
@@ -250,29 +271,6 @@ while True:
                  - v[1] + offset[1]) for v in vertices]
 
             pygame.draw.polygon(gbScreen, Palette.NORM, vertices)
-
-    for x in xrange(topLeft[0], topLeft[0] + 30):
-        for y in xrange(topLeft[1], topLeft[1] + 27):
-            if (y < 0 or x < 0 or len(grid) <= y or len(grid[y]) <= x):
-                continue
-            if isinstance(grid[y][x], str):
-                continue
-
-            sprite = pygame.sprite.Sprite()
-            sprite.image = sprites[grid[y][x].getSpriteName()]
-            drawPos = [x * TILE_SIZE * PPM, y * TILE_SIZE * PPM,
-                       TILE_SIZE * PPM, TILE_SIZE * PPM]
-            drawPos[0] += offset[0]
-            drawPos[1] += offset[1]
-            sprite.rect = sprite.image.get_rect()
-            sprite.rect.topleft = [drawPos[0], drawPos[1]]
-            gbScreen.blit(sprite.image, sprite.rect)
-
-    sprite = pygame.sprite.Sprite()
-    sprite.image = sprites["car.png"]
-    sprite.rect = sprite.image.get_rect()
-    sprite.rect.topleft = [position[0] + offset[0] - 12, -position[1] + offset[1] - 15]
-    gbScreen.blit(sprite.image, sprite.rect)
 
     for body in pickups:
         pos = body.worldCenter.copy()
