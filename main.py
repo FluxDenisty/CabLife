@@ -196,8 +196,8 @@ while True:
         vec.Normalize()
         vec.x *= 15
         vec.y *= -15
-        rect = (int(vec.x) + size[0] / 2, int(vec.y) + 118 / 2, 2, 2)
-        pygame.draw.rect(gbScreen, Palette.BRIGHT, rect)
+        pos = (int(vec.x) + size[0] / 2, int(vec.y) + 118 / 2)
+        pygame.draw.circle(gbScreen, Palette.BRIGHT, pos, 2)
 
     for body in pickups:
         if (
